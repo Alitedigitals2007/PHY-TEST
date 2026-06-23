@@ -3,6 +3,40 @@ import { db } from "@/db";
 import { questionSets, questions } from "@/db/schema";
 import { set5 } from "@/data/set5";
 
+// Auto-create tables SQL
+const CREATE_TABLES_SQL = `
+CREATE TABLE IF NOT EXISTS question_sets (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS questions (
+  id SERIAL PRIMARY KEY,
+  set_id INTEGER NOT NULL,
+  question_text TEXT NOT NULL,
+  option_a TEXT NOT NULL,
+  option_b TEXT NOT NULL,
+  option_c TEXT NOT NULL,
+  option_d TEXT NOT NULL,
+  correct_option TEXT NOT NULL,
+  explanation TEXT,
+  order_index INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS quiz_attempts (
+  id SERIAL PRIMARY KEY,
+  student_name TEXT NOT NULL,
+  department TEXT NOT NULL,
+  set_id INTEGER NOT NULL,
+  score INTEGER NOT NULL DEFAULT 0,
+  total_questions INTEGER NOT NULL DEFAULT 0,
+  time_taken_seconds INTEGER,
+  completed_at TIMESTAMP DEFAULT NOW()
+);
+`;
+
 const sampleSets = [
   {
     name: "Set 1 – Mechanics & Dynamics",
@@ -153,6 +187,9 @@ const sampleSets = [
 
 export async function POST() {
   try {
+    // Create tables if they don't exist
+    await db.execute(CREATE_TABLES_SQL);
+    
     const existingSets = await db.select().from(questionSets);
     if (existingSets.length > 0) {
       return NextResponse.json({ message: "Data already seeded", sets: existingSets.length });
